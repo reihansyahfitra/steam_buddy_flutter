@@ -5,10 +5,16 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+import java.util.Properties
+
 android {
     namespace = "com.example.steam_buddy"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
+
+    buildFeatures {
+        buildConfig = true
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -28,7 +34,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        buildConfigField "String", "STEAM_API_KEY", "\"${getApiKey()}\""
+        buildConfigField("String", "STEAM_API_KEY", "\"${getApiKey()}\"")
     }
 
     buildTypes {
@@ -40,10 +46,14 @@ android {
     }
 }
 
-def getApiKey() {
-    Properties properties = new Properties()
-    properties.load(project.rootProject.file('local.properties').newDataInputStream())
-    return properties.getProperty('STEAM_API_KEY', '"default_key"')
+fun getApiKey(): String {
+    // The import at the top allows you to use Properties directly here
+    val properties = Properties()
+    val localPropertiesFile = project.rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { properties.load(it) }
+    }
+    return properties.getProperty("STEAM_API_KEY", "default_key")
 }
 
 flutter {
