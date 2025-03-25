@@ -252,7 +252,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: GridView.builder(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.75,
+                    childAspectRatio: 0.65,
                     crossAxisSpacing: 10,
                     mainAxisSpacing: 10,
                   ),
@@ -340,11 +340,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                       overflow: TextOverflow.ellipsis,
                                     ),
 
-                                    const SizedBox(height: 4),
+                                    const Spacer(),
 
                                     Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.spaceBetween,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'ID: ${game['id']}',
