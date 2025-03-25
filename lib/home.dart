@@ -15,6 +15,12 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> _games = [];
 
   @override
+  void initState() {
+    super.initState();
+    _performSearch('');
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -148,68 +154,420 @@ class _HomeScreenState extends State<HomeScreen> {
     return 0;
   }
 
-  Future<void> _performSearch(String query) async {
-    if (query.isEmpty) return;
+  Widget _buildFeaturedSections() {
+    // Group games by platform
+    final bundleGames =
+        _games.where((game) => game['platform'] == 'Bundle').toList();
+    final windowsGames =
+        _games.where((game) => game['platform'] == 'Windows').toList();
+    final macGames = _games.where((game) => game['platform'] == 'Mac').toList();
+    final linuxGames =
+        _games.where((game) => game['platform'] == 'Linux').toList();
 
-    setState(() {
-      _isLoading = true;
-      _games = [];
-    });
+    return ListView(
+      children: [
+        if (bundleGames.isNotEmpty)
+          _buildSection('Featured Game Bundles', bundleGames),
+        if (windowsGames.isNotEmpty)
+          _buildSection('Featured Windows Games', windowsGames),
+        if (macGames.isNotEmpty) _buildSection('Featured Mac Games', macGames),
+        if (linuxGames.isNotEmpty)
+          _buildSection('Featured Linux Games', linuxGames),
+      ],
+    );
+  }
 
-    try {
-      final response = await http.get(
-        Uri.parse(
-          'https://store.steampowered.com/api/storesearch/?term=$query&l=english&cc=US',
+  Widget _buildSection(String title, List<Map<String, dynamic>> games) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Text(
+            title,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
         ),
-      );
+        SizedBox(
+          height: 240, // Fixed height for horizontal list
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: games.length,
+            itemBuilder: (context, index) {
+              final game = games[index];
+              return SizedBox(
+                width: 300, // Fixed width for each item
+                child: Card(
+                  margin: const EdgeInsets.only(right: 12, bottom: 4),
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: InkWell(
+                    onTap: () {},
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child:
+                              game['image'] != null
+                                  ? ClipRRect(
+                                    borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(12),
+                                    ),
+                                    child: Image.network(
+                                      game['image'],
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (ctx, error, _) => Container(
+                                            color: Colors.grey[300],
+                                            child: const Icon(
+                                              Icons.image_not_supported,
+                                              size: 40,
+                                            ),
+                                          ),
+                                    ),
+                                  )
+                                  : Container(
+                                    color: Colors.grey[300],
+                                    child: const Icon(
+                                      Icons.image_not_supported,
+                                      size: 40,
+                                    ),
+                                  ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  game['name'],
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const Spacer(),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'ID: ${game['id']}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                    if (game['price'] != null)
+                                      Flexible(
+                                        flex: 3,
+                                        child:
+                                            _hasDiscount(game['price'])
+                                                ? Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.end,
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Text(
+                                                      _formatOriginalPrice(
+                                                        game['price'],
+                                                      ),
+                                                      style: const TextStyle(
+                                                        fontSize: 9,
+                                                        decoration:
+                                                            TextDecoration
+                                                                .lineThrough,
+                                                        color: Colors.grey,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      _formatPrice(
+                                                        game['price'],
+                                                      ),
+                                                      style: const TextStyle(
+                                                        fontSize: 10,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: Colors.green,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      '-${_calculateDiscountPercent(game['price'])}%',
+                                                      style: const TextStyle(
+                                                        fontSize: 9,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: Colors.red,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                )
+                                                : Text(
+                                                  _formatPrice(game['price']),
+                                                  style: const TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.green,
+                                                  ),
+                                                ),
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+  Future<void> _performSearch(String query) async {
+    String currencyCode = 'US';
 
-        if (data.containsKey('items') && data['items'] is List) {
-          final apps = data['items'];
-
-          setState(() {
-            _games = List<Map<String, dynamic>>.from(
-              apps.map(
-                (item) => {
-                  'id': item['id'],
-                  'name': item['name'],
-                  'price': item.containsKey('price') ? item['price'] : null,
-                  'image':
-                      item.containsKey('tiny_image')
-                          ? item['tiny_image']
-                          : null,
-                },
-              ),
-            );
-            _isLoading = false;
-          });
-        } else {
-          setState(() {
-            _isLoading = false;
-            _games = [];
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('No games found'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          });
-        }
-      } else {
-        throw Exception('Failed to load Steam games');
-      }
-    } catch (e) {
+    if (query.isEmpty) {
       setState(() {
-        _isLoading = false;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to load Steam games: $e'),
-            backgroundColor: Colors.red,
+        _isLoading = true;
+        _games = [];
+      });
+      try {
+        final featured = await http.get(
+          Uri.parse(
+            'https://store.steampowered.com/api/featured/?cc=$currencyCode',
           ),
         );
-      });
+
+        if (featured.statusCode == 200) {
+          final data = json.decode(featured.body);
+          List<Map<String, dynamic>> featuredGames = [];
+
+          int parsePrice(dynamic priceValue) {
+            if (priceValue is int) {
+              return priceValue;
+            } else if (priceValue is String) {
+              return int.parse(priceValue.replaceAll(',', ''));
+            } else {
+              return 0; // Default value if parsing fails
+            }
+          }
+
+          if (data.containsKey('large_capsules') &&
+              data['large_capsules'] is List) {
+            final games = data['large_capsules'] as List;
+            for (var game in games) {
+              // Create a properly formatted price map
+              final priceMap = {
+                'currency': game['currency'],
+                'initial':
+                    game['discounted']
+                        ? parsePrice(game['original_price'])
+                        : parsePrice(game['final_price']),
+                'final': parsePrice(game['final_price']),
+              };
+
+              featuredGames.add({
+                'id': game['id'],
+                'name': game['name'],
+                'price': priceMap,
+                'platform':
+                    'Bundle', // Changed from 'platforms' to 'platform' to match your _buildFeaturedSections
+                'image':
+                    game.containsKey('large_capsule_image')
+                        ? game['large_capsule_image']
+                        : null,
+              });
+            }
+          }
+
+          if (data.containsKey('featured_win') &&
+              data['featured_win'] is List) {
+            final games = data['featured_win'] as List;
+            for (var game in games) {
+              if (!featuredGames.any(
+                (element) => element['id'] == game['id'],
+              )) {
+                // Create a properly formatted price map
+                final priceMap = {
+                  'currency': game['currency'],
+                  'initial':
+                      game['discounted']
+                          ? parsePrice(game['original_price'])
+                          : parsePrice(game['final_price']),
+                  'final': parsePrice(game['final_price']),
+                };
+
+                featuredGames.add({
+                  'id': game['id'],
+                  'name': game['name'],
+                  'price': priceMap,
+                  'platform': 'Windows', // Changed from 'platforms'
+                  'image':
+                      game.containsKey('large_capsule_image')
+                          ? game['large_capsule_image']
+                          : null,
+                });
+              }
+            }
+          }
+
+          if (data.containsKey('featured_mac') &&
+              data['featured_mac'] is List) {
+            final games = data['featured_mac'] as List;
+            for (var game in games) {
+              if (!featuredGames.any(
+                (element) => element['id'] == game['id'],
+              )) {
+                // Create a properly formatted price map
+                final priceMap = {
+                  'currency': game['currency'],
+                  'initial':
+                      game['discounted']
+                          ? parsePrice(game['original_price'])
+                          : parsePrice(game['final_price']),
+                  'final': parsePrice(game['final_price']),
+                };
+
+                featuredGames.add({
+                  'id': game['id'],
+                  'name': game['name'],
+                  'price': priceMap,
+                  'platform': 'Mac', // Changed from 'platforms'
+                  'image':
+                      game.containsKey('large_capsule_image')
+                          ? game['large_capsule_image']
+                          : null,
+                });
+              }
+            }
+          }
+
+          if (data.containsKey('featured_linux') &&
+              data['featured_linux'] is List) {
+            final games = data['featured_linux'] as List;
+            for (var game in games) {
+              if (!featuredGames.any(
+                (element) => element['id'] == game['id'],
+              )) {
+                // Create a properly formatted price map
+                final priceMap = {
+                  'currency': game['currency'],
+                  'initial':
+                      game['discounted']
+                          ? parsePrice(game['original_price'])
+                          : parsePrice(game['final_price']),
+                  'final': parsePrice(game['final_price']),
+                };
+                featuredGames.add({
+                  'id': game['id'],
+                  'name': game['name'],
+                  'price': priceMap,
+                  'platform': 'Linux', // Changed from 'platforms'
+                  'image':
+                      game.containsKey('large_capsule_image')
+                          ? game['large_capsule_image']
+                          : null,
+                });
+              }
+            }
+          }
+
+          setState(() {
+            _games = featuredGames;
+            _isLoading = false;
+          });
+
+          print('Loaded ${_games.length} featured games');
+          if (_games.isNotEmpty) {
+            print('Sample game: ${_games.first}');
+          }
+        } else {
+          throw Exception('Failed to load featured games');
+        }
+      } catch (e) {
+        setState(() {
+          _isLoading = false;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to load featured games: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        });
+        print('Error loading featured games: $e');
+      }
+    } else {
+      try {
+        final response = await http.get(
+          Uri.parse(
+            'https://store.steampowered.com/api/storesearch/?term=$query&l=english&cc=$currencyCode',
+          ),
+        );
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+
+          if (data.containsKey('items') && data['items'] is List) {
+            final apps = data['items'];
+
+            setState(() {
+              _games = List<Map<String, dynamic>>.from(
+                apps.map(
+                  (item) => {
+                    'id': item['id'],
+                    'name': item['name'],
+                    'price': item.containsKey('price') ? item['price'] : null,
+                    'image':
+                        item.containsKey('tiny_image')
+                            ? item['tiny_image']
+                            : null,
+                  },
+                ),
+              );
+              _isLoading = false;
+            });
+          } else {
+            setState(() {
+              _isLoading = false;
+              _games = [];
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('No games found'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            });
+          }
+        } else {
+          throw Exception('Failed to load Steam games');
+        }
+      } catch (e) {
+        setState(() {
+          _isLoading = false;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to load Steam games: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        });
+      }
     }
   }
 
@@ -245,149 +603,201 @@ class _HomeScreenState extends State<HomeScreen> {
             if (_isLoading) const Center(child: CircularProgressIndicator()),
 
             if (!_isLoading && _games.isEmpty)
-              const Center(child: Text('No games found')),
-
+              const Center(
+                child: Text(
+                  'No games found. Try a different search term.',
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+              ),
             if (!_isLoading && _games.isNotEmpty)
               Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.65,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                  ),
-                  itemCount: _games.length,
-                  itemBuilder: (context, index) {
-                    final game = _games[index];
-                    return Card(
-                      elevation: 3,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: InkWell(
-                        onTap: () {},
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child:
-                                  game['image'] != null
-                                      ? ClipRRect(
-                                        borderRadius:
-                                            const BorderRadius.vertical(
-                                              top: Radius.circular(12),
-                                            ),
-                                        child: Image.network(
-                                          game['image'],
-                                          fit: BoxFit.cover,
-                                          errorBuilder:
-                                              (ctx, error, _) => Container(
+                child:
+                    _searchController.text.isEmpty
+                        ? _buildFeaturedSections()
+                        : GridView.builder(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                childAspectRatio: 0.65,
+                                crossAxisSpacing: 10,
+                                mainAxisSpacing: 10,
+                              ),
+                          itemCount: _games.length,
+                          itemBuilder: (context, index) {
+                            final game = _games[index];
+                            return Card(
+                              elevation: 3,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: InkWell(
+                                onTap: () {},
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Expanded(
+                                      flex: 3,
+                                      child:
+                                          game['image'] != null
+                                              ? ClipRRect(
+                                                borderRadius:
+                                                    const BorderRadius.vertical(
+                                                      top: Radius.circular(12),
+                                                    ),
+                                                child: Image.network(
+                                                  game['image'],
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder:
+                                                      (
+                                                        ctx,
+                                                        error,
+                                                        _,
+                                                      ) => Container(
+                                                        color: Colors.grey[300],
+                                                        child: const Icon(
+                                                          Icons
+                                                              .image_not_supported,
+                                                          size: 40,
+                                                        ),
+                                                      ),
+                                                  loadingBuilder: (
+                                                    ctx,
+                                                    child,
+                                                    loadingProgress,
+                                                  ) {
+                                                    if (loadingProgress ==
+                                                        null) {
+                                                      return child;
+                                                    }
+                                                    return Center(
+                                                      child: CircularProgressIndicator(
+                                                        value:
+                                                            loadingProgress
+                                                                        .expectedTotalBytes !=
+                                                                    null
+                                                                ? loadingProgress
+                                                                        .cumulativeBytesLoaded /
+                                                                    loadingProgress
+                                                                        .expectedTotalBytes!
+                                                                : null,
+                                                      ),
+                                                    );
+                                                  },
+                                                ),
+                                              )
+                                              : Container(
                                                 color: Colors.grey[300],
                                                 child: const Icon(
                                                   Icons.image_not_supported,
                                                   size: 40,
                                                 ),
                                               ),
-                                          loadingBuilder: (
-                                            ctx,
-                                            child,
-                                            loadingProgress,
-                                          ) {
-                                            if (loadingProgress == null)
-                                              return child;
-                                            return Center(
-                                              child: CircularProgressIndicator(
-                                                value:
-                                                    loadingProgress
-                                                                .expectedTotalBytes !=
-                                                            null
-                                                        ? loadingProgress
-                                                                .cumulativeBytesLoaded /
-                                                            loadingProgress
-                                                                .expectedTotalBytes!
-                                                        : null,
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      )
-                                      : Container(
-                                        color: Colors.grey[300],
-                                        child: const Icon(
-                                          Icons.image_not_supported,
-                                          size: 40,
-                                        ),
-                                      ),
-                            ),
-
-                            Expanded(
-                              flex: 2,
-                              child: Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      game['name'],
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
                                     ),
 
-                                    const Spacer(),
+                                    Expanded(
+                                      flex: 2,
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(8),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              game['name'],
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
 
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'ID: ${game['id']}',
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
+                                            const Spacer(),
 
-                                        if (game['price'] != null)
-                                          Flexible(
-                                            flex: 3,
-                                            child:
-                                                _hasDiscount(game['price'])
-                                                    ? Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .end,
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        Text(
-                                                          _formatOriginalPrice(
-                                                            game['price'],
-                                                          ),
-                                                          style: const TextStyle(
-                                                            fontSize: 9,
-                                                            decoration:
-                                                                TextDecoration
-                                                                    .lineThrough,
-                                                            color: Colors.grey,
-                                                          ),
-                                                        ),
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'ID: ${game['id']}',
+                                                  style: const TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.grey,
+                                                  ),
+                                                ),
 
-                                                        Text(
-                                                          _formatPrice(
-                                                            game['price'],
-                                                          ),
-                                                          style:
-                                                              const TextStyle(
-                                                                fontSize: 10,
+                                                if (game['price'] != null)
+                                                  Flexible(
+                                                    flex: 3,
+                                                    child:
+                                                        _hasDiscount(
+                                                              game['price'],
+                                                            )
+                                                            ? Column(
+                                                              crossAxisAlignment:
+                                                                  CrossAxisAlignment
+                                                                      .end,
+                                                              mainAxisSize:
+                                                                  MainAxisSize
+                                                                      .min,
+                                                              children: [
+                                                                Text(
+                                                                  _formatOriginalPrice(
+                                                                    game['price'],
+                                                                  ),
+                                                                  style: const TextStyle(
+                                                                    fontSize: 9,
+                                                                    decoration:
+                                                                        TextDecoration
+                                                                            .lineThrough,
+                                                                    color:
+                                                                        Colors
+                                                                            .grey,
+                                                                  ),
+                                                                ),
+
+                                                                Text(
+                                                                  _formatPrice(
+                                                                    game['price'],
+                                                                  ),
+                                                                  style: const TextStyle(
+                                                                    fontSize:
+                                                                        10,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    color:
+                                                                        Colors
+                                                                            .green,
+                                                                  ),
+                                                                ),
+
+                                                                Text(
+                                                                  '-${_calculateDiscountPercent(game['price'])}%',
+                                                                  style: const TextStyle(
+                                                                    fontSize: 9,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    color:
+                                                                        Colors
+                                                                            .red,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            )
+                                                            : Text(
+                                                              _formatPrice(
+                                                                game['price'],
+                                                              ),
+                                                              style: const TextStyle(
+                                                                fontSize: 12,
                                                                 fontWeight:
                                                                     FontWeight
                                                                         .bold,
@@ -395,46 +805,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                                                     Colors
                                                                         .green,
                                                               ),
-                                                        ),
-
-                                                        Text(
-                                                          '-${_calculateDiscountPercent(game['price'])}%',
-                                                          style:
-                                                              const TextStyle(
-                                                                fontSize: 9,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                                color:
-                                                                    Colors.red,
-                                                              ),
-                                                        ),
-                                                      ],
-                                                    )
-                                                    : Text(
-                                                      _formatPrice(
-                                                        game['price'],
-                                                      ),
-                                                      style: const TextStyle(
-                                                        fontSize: 12,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        color: Colors.green,
-                                                      ),
-                                                    ),
-                                          ),
-                                      ],
+                                                            ),
+                                                  ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
-                            ),
-                          ],
+                            );
+                          },
                         ),
-                      ),
-                    );
-                  },
-                ),
               ),
           ],
         ),
