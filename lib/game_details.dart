@@ -24,7 +24,6 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
   Map<String, dynamic> _gameDetails = {};
   List<String> _screenshots = [];
   List<Map<String, dynamic>> _videos = [];
-  int _currentScreenshot = 0;
   String _currencyCode = 'US';
   bool _isVideoPlaying = false;
   VideoPlayerController? _videoController;
@@ -406,7 +405,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                             end: Alignment.bottomCenter,
                             colors: [
                               Colors.transparent,
-                              Colors.black.withValues(alpha: 0.8),
+                              Colors.black.withValues(alpha: 0.3),
                             ],
                           ),
                         ),
@@ -633,7 +632,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                     Tab(text: 'About'),
                     Tab(text: 'Media'),
                     Tab(text: 'Details'),
-                    Tab(text: 'System Req'),
+                    Tab(text: 'Spec'),
                   ],
                 ),
               ],
@@ -683,10 +682,22 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      _gameDetails['short_description'],
-                      style: const TextStyle(fontSize: 16),
-                    ),
+                    _gameDetails.containsKey('short_description') &&
+                            _gameDetails['short_description']
+                                .toString()
+                                .isNotEmpty
+                        ? Text(
+                          _gameDetails['short_description'],
+                          style: const TextStyle(fontSize: 16),
+                        )
+                        : const Text(
+                          'No short description available for this game.',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontStyle: FontStyle.italic,
+                            color: Colors.grey,
+                          ),
+                        ),
                   ],
                 ),
               ),
@@ -711,25 +722,35 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Html(
-                      data: _gameDetails['about_the_game'],
-                      style: {
-                        "body": Style(
-                          fontSize: FontSize(16),
-                          margin: Margins.zero,
-                          padding: HtmlPaddings.zero,
+                    _gameDetails.containsKey('about_the_game') &&
+                            _gameDetails['about_the_game'].toString().isNotEmpty
+                        ? Html(
+                          data: _gameDetails['about_the_game'],
+                          style: {
+                            "body": Style(
+                              fontSize: FontSize(16),
+                              margin: Margins.zero,
+                              padding: HtmlPaddings.zero,
+                            ),
+                            "li": Style(margin: Margins.only(bottom: 8)),
+                          },
+                          onLinkTap: (url, _, __) {
+                            if (url != null) {
+                              launchUrl(
+                                Uri.parse(url),
+                                mode: LaunchMode.externalApplication,
+                              );
+                            }
+                          },
+                        )
+                        : const Text(
+                          'No detailed description has been provided for this game.',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontStyle: FontStyle.italic,
+                            color: Colors.grey,
+                          ),
                         ),
-                        "li": Style(margin: Margins.only(bottom: 8)),
-                      },
-                      onLinkTap: (url, _, __) {
-                        if (url != null) {
-                          launchUrl(
-                            Uri.parse(url),
-                            mode: LaunchMode.externalApplication,
-                          );
-                        }
-                      },
-                    ),
                   ],
                 ),
               ),
@@ -755,45 +776,76 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                       ),
                     ),
                     const SizedBox(height: 8),
-                    InkWell(
-                      onTap: () {
-                        final highlightedVideo = _videos.firstWhere(
-                          (video) => video['highlight'] == true,
-                          orElse: () => _videos.first,
-                        );
-                        _playVideo(highlightedVideo['url']);
-                      },
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              _videos.firstWhere(
-                                (video) => video['highlight'] == true,
-                                orElse: () => _videos.first,
-                              )['thumbnail'],
-                              width: double.infinity,
-                              height: 200,
-                              fit: BoxFit.cover,
-                            ),
+                    _videos.any((video) => video['highlight'] == true)
+                        ? InkWell(
+                          onTap: () {
+                            final highlightedVideo = _videos.firstWhere(
+                              (video) => video['highlight'] == true,
+                              orElse: () => _videos.first,
+                            );
+                            _playVideo(highlightedVideo['url']);
+                          },
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  _videos.firstWhere(
+                                    (video) => video['highlight'] == true,
+                                    orElse: () => _videos.first,
+                                  )['thumbnail'],
+                                  width: double.infinity,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  color: Colors.black45,
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                child: const Icon(
+                                  Icons.play_arrow,
+                                  color: Colors.white,
+                                  size: 40,
+                                ),
+                              ),
+                            ],
                           ),
-                          Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              color: Colors.black45,
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            child: const Icon(
-                              Icons.play_arrow,
-                              color: Colors.white,
-                              size: 40,
-                            ),
+                        )
+                        : InkWell(
+                          onTap: () => _playVideo(_videos.first['url']),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  _videos.first['thumbnail'],
+                                  width: double.infinity,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  color: Colors.black45,
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                child: const Icon(
+                                  Icons.play_arrow,
+                                  color: Colors.white,
+                                  size: 40,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
                     const SizedBox(height: 8),
                     Text(
                       _videos.firstWhere(
@@ -825,7 +877,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                   aspectRatio: 16 / 9,
                   child: Chewie(controller: _chewieController!),
                 ),
-                ButtonBar(
+                OverflowBar(
                   children: [
                     TextButton(
                       onPressed: () {
@@ -851,31 +903,60 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                SizedBox(
-                  height: 200,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _screenshots.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: GestureDetector(
-                          onTap:
-                              () => _showFullScreenImage(_screenshots[index]),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              _screenshots[index],
-                              height: 200,
-                              width: 320,
-                              fit: BoxFit.cover,
+                _screenshots.isNotEmpty
+                    ? SizedBox(
+                      height: 200,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _screenshots.length,
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: GestureDetector(
+                              onTap:
+                                  () =>
+                                      _showFullScreenImage(_screenshots[index]),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  _screenshots[index],
+                                  height: 200,
+                                  width: 320,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
                             ),
-                          ),
+                          );
+                        },
+                      ),
+                    )
+                    : Card(
+                      child: Container(
+                        width: double.infinity,
+                        height: 150,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.photo_library_outlined,
+                              color: Colors.grey[400],
+                              size: 48,
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'No screenshots available for this game',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
                         ),
-                      );
-                    },
-                  ),
-                ),
+                      ),
+                    ),
               ],
             ),
 
@@ -891,92 +972,120 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _videos.length,
-                  itemBuilder: (context, index) {
-                    final video = _videos[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: InkWell(
-                        onTap: () => _playVideo(video['url']),
-                        child: Row(
-                          children: [
-                            Stack(
-                              alignment: Alignment.center,
+                _videos.isNotEmpty
+                    ? ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _videos.length,
+                      itemBuilder: (context, index) {
+                        final video = _videos[index];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: InkWell(
+                            onTap: () => _playVideo(video['url']),
+                            child: Row(
                               children: [
-                                ClipRRect(
-                                  borderRadius: const BorderRadius.only(
-                                    topLeft: Radius.circular(4),
-                                    bottomLeft: Radius.circular(4),
-                                  ),
-                                  child: Image.network(
-                                    video['thumbnail'],
-                                    height: 80,
-                                    width: 120,
-                                    fit: BoxFit.cover,
-                                  ),
+                                Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: const BorderRadius.only(
+                                        topLeft: Radius.circular(4),
+                                        bottomLeft: Radius.circular(4),
+                                      ),
+                                      child: Image.network(
+                                        video['thumbnail'],
+                                        height: 80,
+                                        width: 120,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                    Container(
+                                      width: 30,
+                                      height: 30,
+                                      decoration: BoxDecoration(
+                                        color: Colors.black45,
+                                        borderRadius: BorderRadius.circular(15),
+                                      ),
+                                      child: const Icon(
+                                        Icons.play_arrow,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                Container(
-                                  width: 30,
-                                  height: 30,
-                                  decoration: BoxDecoration(
-                                    color: Colors.black45,
-                                    borderRadius: BorderRadius.circular(15),
-                                  ),
-                                  child: const Icon(
-                                    Icons.play_arrow,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 8,
-                                ),
-                                child: Text(
-                                  video['name'],
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            video['highlight']
-                                ? Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  margin: const EdgeInsets.only(right: 8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: const Text(
-                                    'Featured',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
+                                    child: Text(
+                                      video['name'],
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
-                                )
-                                : const SizedBox(width: 8),
+                                ),
+                                const SizedBox(width: 8),
+                                video['highlight']
+                                    ? Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      margin: const EdgeInsets.only(right: 8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: const Text(
+                                        'Featured',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    )
+                                    : const SizedBox(width: 8),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                    : Card(
+                      child: Container(
+                        width: double.infinity,
+                        height: 150,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.videocam_off,
+                              color: Colors.grey[400],
+                              size: 48,
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'No videos available for this game',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                    );
-                  },
-                ),
+                    ),
               ],
             ),
         ],
@@ -985,6 +1094,23 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
   }
 
   Widget _buildDetailsTab(ThemeProvider themeProvider) {
+    bool hasGameInfo =
+        _gameDetails.containsKey('release_date') ||
+        _gameDetails.containsKey('developers') ||
+        _gameDetails.containsKey('publishers');
+
+    bool hasCategories =
+        _gameDetails.containsKey('genres') ||
+        _gameDetails.containsKey('categories');
+
+    bool hasLanguages =
+        _gameDetails.containsKey('supported_languages') &&
+        _gameDetails['supported_languages'].toString().isNotEmpty;
+
+    bool hasAchievements =
+        _gameDetails.containsKey('achievements') &&
+        _gameDetails['achievements']['highlighted'].length > 0;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -1010,169 +1136,189 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                     ),
                     const SizedBox(height: 12),
 
-                    if (_gameDetails.containsKey('release_date'))
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(
-                              width: 100,
-                              child: Text(
-                                'Release Date:',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                _gameDetails['release_date']['date'] ??
-                                    'Unknown',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                    if (_gameDetails.containsKey('developers'))
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(
-                              width: 100,
-                              child: Text(
-                                'Developer:',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                _gameDetails['developers'].join(', '),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                    if (_gameDetails.containsKey('publishers'))
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(
-                              width: 100,
-                              child: Text(
-                                'Publisher:',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                _gameDetails['publishers'].join(', '),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                    // Add platform info
-                    if (_gameDetails.containsKey('platforms'))
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(
-                              width: 100,
-                              child: Text(
-                                'Platforms:',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            Expanded(
-                              child: Wrap(
-                                spacing: 8,
-                                children: [
-                                  if (_gameDetails['platforms']['windows'] ==
-                                      true)
-                                    const Icon(Icons.computer),
-                                  if (_gameDetails['platforms']['mac'] == true)
-                                    const Icon(Icons.apple),
-                                  if (_gameDetails['platforms']['linux'] ==
-                                      true)
-                                    const Icon(Icons.android),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                    // Add required age if available
-                    if (_gameDetails.containsKey('required_age') &&
-                        _gameDetails['required_age'] > 0)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(
-                              width: 100,
-                              child: Text(
-                                'Age Rating:',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.red,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
+                    if (hasGameInfo) ...[
+                      if (_gameDetails.containsKey('release_date'))
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(
+                                width: 100,
                                 child: Text(
-                                  '${_gameDetails['required_age']}+',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
+                                  'Release Date:',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  _gameDetails['release_date']['date'] ??
+                                      'Unknown',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      if (_gameDetails.containsKey('developers'))
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(
+                                width: 100,
+                                child: Text(
+                                  'Developer:',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  _gameDetails['developers'].join(', '),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      if (_gameDetails.containsKey('publishers'))
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(
+                                width: 100,
+                                child: Text(
+                                  'Publisher:',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  _gameDetails['publishers'].join(', '),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      // Add platform info
+                      if (_gameDetails.containsKey('platforms'))
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(
+                                width: 100,
+                                child: Text(
+                                  'Platforms:',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: Wrap(
+                                  spacing: 8,
+                                  children: [
+                                    if (_gameDetails['platforms']['windows'] ==
+                                        true)
+                                      const Icon(Icons.computer),
+                                    if (_gameDetails['platforms']['mac'] ==
+                                        true)
+                                      const Icon(Icons.apple),
+                                    if (_gameDetails['platforms']['linux'] ==
+                                        true)
+                                      const Icon(Icons.android),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      // Add required age if available
+                      if (_gameDetails.containsKey('required_age') &&
+                          _gameDetails['required_age'] > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(
+                                width: 100,
+                                child: Text(
+                                  'Age Rating:',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    '${_gameDetails['required_age']}+',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
+                        ),
+                    ] else ...[
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16.0),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                color: Colors.grey,
+                                size: 36,
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'No basic game information available',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
+                    ],
                   ],
                 ),
               ),
             ),
 
           const SizedBox(height: 16),
-
-          // Categories and genres
-          if (_gameDetails.containsKey('genres') ||
-              _gameDetails.containsKey('categories'))
-            Card(
-              elevation: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Categories & Genres',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
+          Card(
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Categories & Genres',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  if (hasCategories) ...[
                     if (_gameDetails.containsKey('genres'))
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1224,117 +1370,178 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
                           ),
                         ],
                       ),
+                  ] else ...[
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16.0),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.category_outlined,
+                              color: Colors.grey,
+                              size: 36,
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'No category or genre information available',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
-                ),
+                ],
               ),
             ),
+          ),
 
           const SizedBox(height: 16),
 
           // Languages support
-          if (_gameDetails.containsKey('supported_languages'))
-            Card(
-              elevation: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Supported Languages',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Html(
-                      data: _gameDetails['supported_languages'],
-                      style: {
-                        "body": Style(
-                          fontSize: FontSize(14),
-                          margin: Margins.zero,
-                          padding: HtmlPaddings.zero,
+          Card(
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Supported Languages',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  hasLanguages
+                      ? Html(
+                        data: _gameDetails['supported_languages'],
+                        style: {
+                          "body": Style(
+                            fontSize: FontSize(14),
+                            margin: Margins.zero,
+                            padding: HtmlPaddings.zero,
+                          ),
+                        },
+                      )
+                      : const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8.0),
+                        child: Text(
+                          'Language support information is not available for this game.',
+                          style: TextStyle(
+                            fontStyle: FontStyle.italic,
+                            color: Colors.grey,
+                          ),
                         ),
-                      },
-                    ),
-                  ],
-                ),
+                      ),
+                ],
               ),
             ),
+          ),
 
           const SizedBox(height: 16),
 
           // Achievement showcase
-          if (_gameDetails.containsKey('achievements') &&
-              _gameDetails['achievements']['highlighted'].length > 0)
-            Card(
-              elevation: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Achievements',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+          Card(
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Achievements',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  hasAchievements
+                      ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Highlighted Achievements',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                'Total: ${_gameDetails['achievements']['total']}',
+                                style: const TextStyle(color: Colors.grey),
+                              ),
+                            ],
                           ),
-                        ),
-                        Text(
-                          'Total: ${_gameDetails['achievements']['total']}',
-                          style: const TextStyle(color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    const Text('Highlighted Achievements'),
-                    const SizedBox(height: 8),
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 5,
-                            crossAxisSpacing: 8,
-                            mainAxisSpacing: 8,
-                            childAspectRatio: 1,
-                          ),
-                      itemCount:
-                          _gameDetails['achievements']['highlighted'].length,
-                      itemBuilder: (context, index) {
-                        final achievement =
-                            _gameDetails['achievements']['highlighted'][index];
-                        return Tooltip(
-                          message: achievement['name'],
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: Image.network(
-                              achievement['path'],
-                              fit: BoxFit.cover,
-                              errorBuilder:
-                                  (context, error, stackTrace) => Container(
-                                    color: Colors.grey[300],
-                                    child: const Center(
-                                      child: Icon(
-                                        Icons.emoji_events,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
+                          const SizedBox(height: 8),
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 5,
+                                  crossAxisSpacing: 8,
+                                  mainAxisSpacing: 8,
+                                  childAspectRatio: 1,
+                                ),
+                            itemCount:
+                                _gameDetails['achievements']['highlighted']
+                                    .length,
+                            itemBuilder: (context, index) {
+                              final achievement =
+                                  _gameDetails['achievements']['highlighted'][index];
+                              return Tooltip(
+                                message: achievement['name'],
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: Image.network(
+                                    achievement['path'],
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            Container(
+                                              color: Colors.grey[300],
+                                              child: const Center(
+                                                child: Icon(
+                                                  Icons.emoji_events,
+                                                  color: Colors.grey,
+                                                ),
+                                              ),
+                                            ),
                                   ),
-                            ),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
+                        ],
+                      )
+                      : const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16.0),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.emoji_events_outlined,
+                                color: Colors.grey,
+                                size: 36,
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'This game does not have achievements',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                ],
               ),
             ),
+          ),
 
           const SizedBox(height: 16),
         ],
@@ -1343,13 +1550,79 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
   }
 
   Widget _buildSystemReqTab(ThemeProvider themeProvider) {
+    bool hasPcRequirements =
+        _gameDetails.containsKey('pc_requirements') &&
+        _gameDetails['pc_requirements'] is Map &&
+        (_gameDetails['pc_requirements'].containsKey('minimum') ||
+            _gameDetails['pc_requirements'].containsKey('recommended'));
+
+    bool hasMacRequirements =
+        _gameDetails.containsKey('mac_requirements') &&
+        _gameDetails['mac_requirements'] is Map &&
+        (_gameDetails['mac_requirements'].containsKey('minimum') ||
+            _gameDetails['mac_requirements'].containsKey('recommended'));
+
+    bool hasLinuxRequirements =
+        _gameDetails.containsKey('linux_requirements') &&
+        _gameDetails['linux_requirements'] is Map &&
+        (_gameDetails['linux_requirements'].containsKey('minimum') ||
+            _gameDetails['linux_requirements'].containsKey('recommended'));
+
+    bool hasNoRequirements =
+        !hasPcRequirements && !hasMacRequirements && !hasLinuxRequirements;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (_gameDetails.containsKey('pc_requirements') &&
-              _gameDetails['pc_requirements'] is Map)
+          if (hasNoRequirements)
+            Card(
+              elevation: 2,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.computer_outlined,
+                      size: 48,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'System requirements information is not available for this game',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Check the Steam store page for more details',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        final Uri url = Uri.parse(
+                          'https://store.steampowered.com/app/${widget.game['id']}',
+                        );
+                        launchUrl(url, mode: LaunchMode.externalApplication);
+                      },
+                      child: const Text('Visit Steam Store'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // Windows Requirements
+          if (hasPcRequirements)
             Card(
               elevation: 2,
               margin: const EdgeInsets.only(bottom: 16),
@@ -1410,8 +1683,8 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
               ),
             ),
 
-          if (_gameDetails.containsKey('mac_requirements') &&
-              _gameDetails['mac_requirements'] is Map)
+          // Mac Requirements
+          if (hasMacRequirements)
             Card(
               elevation: 2,
               margin: const EdgeInsets.only(bottom: 16),
@@ -1472,8 +1745,8 @@ class _GameDetailsScreenState extends State<GameDetailsScreen>
               ),
             ),
 
-          if (_gameDetails.containsKey('linux_requirements') &&
-              _gameDetails['linux_requirements'] is Map)
+          // Linux Requirements
+          if (hasLinuxRequirements)
             Card(
               elevation: 2,
               margin: const EdgeInsets.only(bottom: 16),
