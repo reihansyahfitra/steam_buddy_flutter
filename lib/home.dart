@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'dart:convert';
 
 import 'package:steam_buddy/currency_provider.dart';
+import 'package:steam_buddy/game_details.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -224,7 +225,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: InkWell(
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => GameDetailsScreen(game: game),
+                        ),
+                      );
+                    },
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -654,7 +662,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: InkWell(
-                                    onTap: () {},
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder:
+                                              (context) =>
+                                                  GameDetailsScreen(game: game),
+                                        ),
+                                      );
+                                    },
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.stretch,

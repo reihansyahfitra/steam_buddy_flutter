@@ -1,9 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:steam_buddy/theme_provider.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
-class SettingScreen extends StatelessWidget {
+class SettingScreen extends StatefulWidget {
   const SettingScreen({super.key});
+
+  @override
+  State<SettingScreen> createState() => _SettingScreenState();
+}
+
+class _SettingScreenState extends State<SettingScreen> {
+  String _appVersion = '';
+  String _appName = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _getAppInfo();
+  }
+
+  Future<void> _getAppInfo() async {
+    final PackageInfo info = await PackageInfo.fromPlatform();
+    setState(() {
+      _appVersion = info.version;
+      _appName = info.appName;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -156,12 +179,17 @@ class SettingScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Steam Buddy',
+                  Text(
+                    _appName.isNotEmpty ? _appName : 'Steam Buddy',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
-                  const Text('Version 1.0.0', style: TextStyle(fontSize: 14)),
+                  Text(
+                    _appVersion.isNotEmpty
+                        ? 'Version $_appVersion'
+                        : 'Version 1.0.0',
+                    style: TextStyle(fontSize: 14),
+                  ),
                   const SizedBox(height: 16),
                   const Text(
                     'Steam Buddy is an unofficial companion app for Steam that helps you browse and discover games on the Steam platform.',

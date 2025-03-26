@@ -137,10 +137,6 @@ class _MyHomePageState extends State<MyHomePage> {
     return currencyNames[code] ?? code;
   }
 
-  static const TextStyle optionStyle = TextStyle(
-    fontSize: 30,
-    fontWeight: FontWeight.bold,
-  );
   static const List<Widget> _widgetOptions = <Widget>[
     HomeScreen(),
     SettingScreen(),
@@ -166,8 +162,10 @@ class _MyHomePageState extends State<MyHomePage> {
             DropdownButton<String>(
               value: currencyProvider.currencyCode,
               icon: const Icon(Icons.arrow_drop_down),
-              dropdownColor: Theme.of(context).appBarTheme.backgroundColor,
-              style: const TextStyle(color: Colors.black),
+              dropdownColor: themeProvider.currentTheme.colorScheme.onPrimary,
+              style: TextStyle(
+                color: themeProvider.currentTheme.textTheme.bodyLarge!.color,
+              ),
               underline: Container(height: 2, color: Colors.white),
               onChanged: (String? newValue) {
                 setState(() {
