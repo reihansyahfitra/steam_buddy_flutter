@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'dart:convert';
+
+import 'package:steam_buddy/currency_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,15 +16,32 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _isLoading = false;
   List<Map<String, dynamic>> _games = [];
+  CurrencyProvider? _currencyProvider;
 
   @override
   void initState() {
     super.initState();
-    _performSearch('');
+  }
+
+  void _onCurrencyChanged() {
+    _performSearch(_searchController.text);
+  }
+
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final currencyProvider = Provider.of<CurrencyProvider>(context);
+
+    if (_currencyProvider != currencyProvider) {
+      _currencyProvider?.removeListener(_onCurrencyChanged);
+      _currencyProvider = currencyProvider;
+      _currencyProvider?.addListener(_onCurrencyChanged);
+      _performSearch(_searchController.text);
+    }
   }
 
   @override
   void dispose() {
+    _currencyProvider?.removeListener(_onCurrencyChanged);
     _searchController.dispose();
     super.dispose();
   }
@@ -340,7 +360,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _performSearch(String query) async {
-    String currencyCode = 'US';
+    final currencyProvider = Provider.of<CurrencyProvider>(
+      context,
+      listen: false,
+    );
+    String currencyCode = currencyProvider.currencyCode;
 
     if (query.isEmpty) {
       setState(() {
@@ -573,202 +597,237 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                labelText: 'Search for a game',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon:
-                    _searchController.text.isNotEmpty
-                        ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () => _searchController.clear(),
-                        )
-                        : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+    return Consumer<CurrencyProvider>(
+      builder: (context, currencyProvider, child) {
+        return Scaffold(
+          body: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    labelText: 'Search for a game',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon:
+                        _searchController.text.isNotEmpty
+                            ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () => _searchController.clear(),
+                            )
+                            : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onChanged: (value) => _performSearch(value),
                 ),
-              ),
-              onChanged: (value) => _performSearch(value),
-            ),
 
-            const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-            if (_isLoading) const Center(child: CircularProgressIndicator()),
+                if (_isLoading)
+                  const Center(child: CircularProgressIndicator()),
 
-            if (!_isLoading && _games.isEmpty)
-              const Center(
-                child: Text(
-                  'No games found. Try a different search term.',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
-                ),
-              ),
-            if (!_isLoading && _games.isNotEmpty)
-              Expanded(
-                child:
-                    _searchController.text.isEmpty
-                        ? _buildFeaturedSections()
-                        : GridView.builder(
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                childAspectRatio: 0.65,
-                                crossAxisSpacing: 10,
-                                mainAxisSpacing: 10,
-                              ),
-                          itemCount: _games.length,
-                          itemBuilder: (context, index) {
-                            final game = _games[index];
-                            return Card(
-                              elevation: 3,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: InkWell(
-                                onTap: () {},
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    Expanded(
-                                      flex: 3,
-                                      child:
-                                          game['image'] != null
-                                              ? ClipRRect(
-                                                borderRadius:
-                                                    const BorderRadius.vertical(
-                                                      top: Radius.circular(12),
-                                                    ),
-                                                child: Image.network(
-                                                  game['image'],
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder:
-                                                      (
-                                                        ctx,
-                                                        error,
-                                                        _,
-                                                      ) => Container(
-                                                        color: Colors.grey[300],
-                                                        child: const Icon(
-                                                          Icons
-                                                              .image_not_supported,
-                                                          size: 40,
+                if (!_isLoading && _games.isEmpty)
+                  const Center(
+                    child: Text(
+                      'No games found. Try a different search term.',
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                  ),
+                if (!_isLoading && _games.isNotEmpty)
+                  Expanded(
+                    child:
+                        _searchController.text.isEmpty
+                            ? _buildFeaturedSections()
+                            : GridView.builder(
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    childAspectRatio: 0.65,
+                                    crossAxisSpacing: 10,
+                                    mainAxisSpacing: 10,
+                                  ),
+                              itemCount: _games.length,
+                              itemBuilder: (context, index) {
+                                final game = _games[index];
+                                return Card(
+                                  elevation: 3,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: InkWell(
+                                    onTap: () {},
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        Expanded(
+                                          flex: 3,
+                                          child:
+                                              game['image'] != null
+                                                  ? ClipRRect(
+                                                    borderRadius:
+                                                        const BorderRadius.vertical(
+                                                          top: Radius.circular(
+                                                            12,
+                                                          ),
                                                         ),
-                                                      ),
-                                                  loadingBuilder: (
-                                                    ctx,
-                                                    child,
-                                                    loadingProgress,
-                                                  ) {
-                                                    if (loadingProgress ==
-                                                        null) {
-                                                      return child;
-                                                    }
-                                                    return Center(
-                                                      child: CircularProgressIndicator(
-                                                        value:
-                                                            loadingProgress
-                                                                        .expectedTotalBytes !=
-                                                                    null
-                                                                ? loadingProgress
-                                                                        .cumulativeBytesLoaded /
-                                                                    loadingProgress
-                                                                        .expectedTotalBytes!
-                                                                : null,
-                                                      ),
-                                                    );
-                                                  },
-                                                ),
-                                              )
-                                              : Container(
-                                                color: Colors.grey[300],
-                                                child: const Icon(
-                                                  Icons.image_not_supported,
-                                                  size: 40,
-                                                ),
-                                              ),
-                                    ),
+                                                    child: Image.network(
+                                                      game['image'],
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder:
+                                                          (
+                                                            ctx,
+                                                            error,
+                                                            _,
+                                                          ) => Container(
+                                                            color:
+                                                                Colors
+                                                                    .grey[300],
+                                                            child: const Icon(
+                                                              Icons
+                                                                  .image_not_supported,
+                                                              size: 40,
+                                                            ),
+                                                          ),
+                                                      loadingBuilder: (
+                                                        ctx,
+                                                        child,
+                                                        loadingProgress,
+                                                      ) {
+                                                        if (loadingProgress ==
+                                                            null) {
+                                                          return child;
+                                                        }
+                                                        return Center(
+                                                          child: CircularProgressIndicator(
+                                                            value:
+                                                                loadingProgress
+                                                                            .expectedTotalBytes !=
+                                                                        null
+                                                                    ? loadingProgress
+                                                                            .cumulativeBytesLoaded /
+                                                                        loadingProgress
+                                                                            .expectedTotalBytes!
+                                                                    : null,
+                                                          ),
+                                                        );
+                                                      },
+                                                    ),
+                                                  )
+                                                  : Container(
+                                                    color: Colors.grey[300],
+                                                    child: const Icon(
+                                                      Icons.image_not_supported,
+                                                      size: 40,
+                                                    ),
+                                                  ),
+                                        ),
 
-                                    Expanded(
-                                      flex: 2,
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(8),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              game['name'],
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-
-                                            const Spacer(),
-
-                                            Row(
+                                        Expanded(
+                                          flex: 2,
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(8),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
                                               mainAxisAlignment:
                                                   MainAxisAlignment
                                                       .spaceBetween,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
                                               children: [
                                                 Text(
-                                                  'ID: ${game['id']}',
+                                                  game['name'],
                                                   style: const TextStyle(
-                                                    fontSize: 12,
-                                                    color: Colors.grey,
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.bold,
                                                   ),
+                                                  maxLines: 2,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
                                                 ),
 
-                                                if (game['price'] != null)
-                                                  Flexible(
-                                                    flex: 3,
-                                                    child:
-                                                        _hasDiscount(
-                                                              game['price'],
-                                                            )
-                                                            ? Column(
-                                                              crossAxisAlignment:
-                                                                  CrossAxisAlignment
-                                                                      .end,
-                                                              mainAxisSize:
-                                                                  MainAxisSize
-                                                                      .min,
-                                                              children: [
-                                                                Text(
-                                                                  _formatOriginalPrice(
-                                                                    game['price'],
-                                                                  ),
-                                                                  style: const TextStyle(
-                                                                    fontSize: 9,
-                                                                    decoration:
-                                                                        TextDecoration
-                                                                            .lineThrough,
-                                                                    color:
-                                                                        Colors
-                                                                            .grey,
-                                                                  ),
-                                                                ),
+                                                const Spacer(),
 
-                                                                Text(
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      'ID: ${game['id']}',
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                        color: Colors.grey,
+                                                      ),
+                                                    ),
+
+                                                    if (game['price'] != null)
+                                                      Flexible(
+                                                        flex: 3,
+                                                        child:
+                                                            _hasDiscount(
+                                                                  game['price'],
+                                                                )
+                                                                ? Column(
+                                                                  crossAxisAlignment:
+                                                                      CrossAxisAlignment
+                                                                          .end,
+                                                                  mainAxisSize:
+                                                                      MainAxisSize
+                                                                          .min,
+                                                                  children: [
+                                                                    Text(
+                                                                      _formatOriginalPrice(
+                                                                        game['price'],
+                                                                      ),
+                                                                      style: const TextStyle(
+                                                                        fontSize:
+                                                                            9,
+                                                                        decoration:
+                                                                            TextDecoration.lineThrough,
+                                                                        color:
+                                                                            Colors.grey,
+                                                                      ),
+                                                                    ),
+
+                                                                    Text(
+                                                                      _formatPrice(
+                                                                        game['price'],
+                                                                      ),
+                                                                      style: const TextStyle(
+                                                                        fontSize:
+                                                                            10,
+                                                                        fontWeight:
+                                                                            FontWeight.bold,
+                                                                        color:
+                                                                            Colors.green,
+                                                                      ),
+                                                                    ),
+
+                                                                    Text(
+                                                                      '-${_calculateDiscountPercent(game['price'])}%',
+                                                                      style: const TextStyle(
+                                                                        fontSize:
+                                                                            9,
+                                                                        fontWeight:
+                                                                            FontWeight.bold,
+                                                                        color:
+                                                                            Colors.red,
+                                                                      ),
+                                                                    ),
+                                                                  ],
+                                                                )
+                                                                : Text(
                                                                   _formatPrice(
                                                                     game['price'],
                                                                   ),
                                                                   style: const TextStyle(
                                                                     fontSize:
-                                                                        10,
+                                                                        12,
                                                                     fontWeight:
                                                                         FontWeight
                                                                             .bold,
@@ -777,52 +836,25 @@ class _HomeScreenState extends State<HomeScreen> {
                                                                             .green,
                                                                   ),
                                                                 ),
-
-                                                                Text(
-                                                                  '-${_calculateDiscountPercent(game['price'])}%',
-                                                                  style: const TextStyle(
-                                                                    fontSize: 9,
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .bold,
-                                                                    color:
-                                                                        Colors
-                                                                            .red,
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            )
-                                                            : Text(
-                                                              _formatPrice(
-                                                                game['price'],
-                                                              ),
-                                                              style: const TextStyle(
-                                                                fontSize: 12,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                                color:
-                                                                    Colors
-                                                                        .green,
-                                                              ),
-                                                            ),
-                                                  ),
+                                                      ),
+                                                  ],
+                                                ),
                                               ],
                                             ),
-                                          ],
+                                          ),
                                         ),
-                                      ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-              ),
-          ],
-        ),
-      ),
+                                  ),
+                                );
+                              },
+                            ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

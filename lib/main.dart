@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:steam_buddy/home.dart';
+import 'package:provider/provider.dart';
+import 'package:steam_buddy/currency_provider.dart';
 
-void main() => runApp(const MyApp());
+void main() => runApp(
+  ChangeNotifierProvider(
+    create: (context) => CurrencyProvider(),
+    child: const MyApp(),
+  ),
+);
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -29,7 +36,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
-  String _selectedCurrency = 'USD';
+
   static const TextStyle optionStyle = TextStyle(
     fontSize: 30,
     fontWeight: FontWeight.bold,
@@ -48,6 +55,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final currencyProvider = Provider.of<CurrencyProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -55,23 +64,55 @@ class _MyHomePageState extends State<MyHomePage> {
             Text(widget.title),
             const Spacer(),
             DropdownButton<String>(
-              value: _selectedCurrency,
+              value: currencyProvider.currencyCode,
               icon: const Icon(Icons.arrow_drop_down),
               dropdownColor: Theme.of(context).appBarTheme.backgroundColor,
               style: const TextStyle(color: Colors.black),
               underline: Container(height: 2, color: Colors.white),
               onChanged: (String? newValue) {
                 setState(() {
-                  _selectedCurrency = newValue!;
+                  currencyProvider.setCurrency(newValue!);
                 });
               },
               items:
                   <String>[
-                    'USD',
-                    'EUR',
-                    'GBP',
-                    'JPY',
-                    'CNY',
+                    "US",
+                    "AR",
+                    "AU",
+                    "BR",
+                    "CA",
+                    "CL",
+                    "CN",
+                    "CO",
+                    "CR",
+                    "EU",
+                    "GB",
+                    "HK",
+                    "ID",
+                    "IL",
+                    "IN",
+                    "JP",
+                    "KR",
+                    "KZ",
+                    "MX",
+                    "MY",
+                    "NO",
+                    "NZ",
+                    "PE",
+                    "PH",
+                    "PL",
+                    "QA",
+                    "RU",
+                    "SA",
+                    "SG",
+                    "TH",
+                    "TR",
+                    "TW",
+                    "UA",
+                    "AE",
+                    "UY",
+                    "VN",
+                    "ZA",
                   ].map<DropdownMenuItem<String>>((String value) {
                     return DropdownMenuItem<String>(
                       value: value,
