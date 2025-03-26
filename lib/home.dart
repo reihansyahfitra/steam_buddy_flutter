@@ -517,10 +517,7 @@ class _HomeScreenState extends State<HomeScreen> {
             _isLoading = false;
           });
 
-          print('Loaded ${_games.length} featured games');
-          if (_games.isNotEmpty) {
-            print('Sample game: ${_games.first}');
-          }
+          if (_games.isNotEmpty) {}
         } else {
           throw Exception('Failed to load featured games');
         }
@@ -534,7 +531,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           );
         });
-        print('Error loading featured games: $e');
       }
     } else {
       try {

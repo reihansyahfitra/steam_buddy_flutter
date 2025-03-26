@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:steam_buddy/home.dart';
 import 'package:provider/provider.dart';
 import 'package:steam_buddy/currency_provider.dart';
+import 'package:steam_buddy/theme_provider.dart';
+import 'package:steam_buddy/settings.dart';
 import 'package:country_flags/country_flags.dart';
 
 void main() => runApp(
-  ChangeNotifierProvider(
-    create: (context) => CurrencyProvider(),
+  MultiProvider(
+    providers: [
+      ChangeNotifierProvider(create: (context) => CurrencyProvider()),
+      ChangeNotifierProvider(create: (context) => ThemeProvider()),
+    ],
     child: const MyApp(),
   ),
 );
@@ -18,8 +23,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
+    return MaterialApp(
       title: appTitle,
+      theme: themeProvider.currentTheme,
       debugShowCheckedModeBanner: false,
       home: MyHomePage(title: appTitle),
     );
@@ -135,8 +143,7 @@ class _MyHomePageState extends State<MyHomePage> {
   );
   static const List<Widget> _widgetOptions = <Widget>[
     HomeScreen(),
-    Text('Index 1: Business', style: optionStyle),
-    Text('Index 2: School', style: optionStyle),
+    SettingScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -148,6 +155,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     final currencyProvider = Provider.of<CurrencyProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -179,7 +187,17 @@ class _MyHomePageState extends State<MyHomePage> {
                           children: [
                             _getFlag(value),
                             const SizedBox(width: 8),
-                            Text(value),
+                            Text(
+                              value,
+                              style: TextStyle(
+                                color:
+                                    themeProvider
+                                        .currentTheme
+                                        .textTheme
+                                        .bodyLarge!
+                                        .color,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -201,16 +219,32 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: Center(child: _widgetOptions[_selectedIndex]),
       drawer: Drawer(
-        // Add a ListView to the drawer. This ensures the user can scroll
-        // through the options in the drawer if there isn't enough vertical
-        // space to fit everything.
         child: ListView(
-          // Important: Remove any padding from the ListView.
           padding: EdgeInsets.zero,
           children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.blue),
-              child: Text('Drawer Header'),
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Steam Buddy',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontSize: 24,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Settings & Navigation',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
+                  ),
+                ],
+              ),
             ),
             ListTile(
               title: const Text('Home'),
@@ -223,21 +257,11 @@ class _MyHomePageState extends State<MyHomePage> {
               },
             ),
             ListTile(
-              title: const Text('Business'),
+              title: const Text('Settings'),
               selected: _selectedIndex == 1,
               onTap: () {
                 // Update the state of the app
                 _onItemTapped(1);
-                // Then close the drawer
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              title: const Text('School'),
-              selected: _selectedIndex == 2,
-              onTap: () {
-                // Update the state of the app
-                _onItemTapped(2);
                 // Then close the drawer
                 Navigator.pop(context);
               },
