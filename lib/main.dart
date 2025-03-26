@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:steam_buddy/home.dart';
 import 'package:provider/provider.dart';
 import 'package:steam_buddy/currency_provider.dart';
+import 'package:country_flags/country_flags.dart';
 
 void main() => runApp(
   ChangeNotifierProvider(
@@ -36,6 +37,97 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
+
+  final Map<String, String> _countryCodeMap = {
+    "US": "US", // United States
+    "AR": "AR", // Argentina
+    "AU": "AU", // Australia
+    "BR": "BR", // Brazil
+    "CA": "CA", // Canada
+    "CL": "CL", // Chile
+    "CN": "CN", // China
+    "CO": "CO", // Colombia
+    "CR": "CR", // Costa Rica
+    "EU": "EU", // European Union (special case)
+    "GB": "GB", // United Kingdom
+    "HK": "HK", // Hong Kong
+    "ID": "ID", // Indonesia
+    "IL": "IL", // Israel
+    "IN": "IN", // India
+    "JP": "JP", // Japan
+    "KR": "KR", // South Korea
+    "KZ": "KZ", // Kazakhstan
+    "MX": "MX", // Mexico
+    "MY": "MY", // Malaysia
+    "NO": "NO", // Norway
+    "NZ": "NZ", // New Zealand
+    "PE": "PE", // Peru
+    "PH": "PH", // Philippines
+    "PL": "PL", // Poland
+    "QA": "QA", // Qatar
+    "RU": "RU", // Russia
+    "SA": "SA", // Saudi Arabia
+    "SG": "SG", // Singapore
+    "TH": "TH", // Thailand
+    "TR": "TR", // Turkey
+    "TW": "TW", // Taiwan
+    "UA": "UA", // Ukraine
+    "AE": "AE", // United Arab Emirates
+    "UY": "UY", // Uruguay
+    "VN": "VN", // Vietnam
+    "ZA": "ZA", // South Africa
+  };
+
+  Widget _getFlag(String countryCode) {
+    return CountryFlag.fromCountryCode(
+      countryCode.toLowerCase(),
+      height: 20,
+      width: 30,
+    );
+  }
+
+  String _getCurrencyName(String code) {
+    final Map<String, String> currencyNames = {
+      "US": "USD (US Dollar)",
+      "AR": "ARS (Argentine Peso)",
+      "AU": "AUD (Australian Dollar)",
+      "BR": "BRL (Brazilian Real)",
+      "CA": "CAD (Canadian Dollar)",
+      "CL": "CLP (Chilean Peso)",
+      "CN": "CNY (Chinese Yuan)",
+      "CO": "COP (Colombian Peso)",
+      "CR": "CRC (Costa Rican Colón)",
+      "EU": "EUR (Euro)",
+      "GB": "GBP (British Pound)",
+      "HK": "HKD (Hong Kong Dollar)",
+      "ID": "IDR (Indonesian Rupiah)",
+      "IL": "ILS (Israeli New Shekel)",
+      "IN": "INR (Indian Rupee)",
+      "JP": "JPY (Japanese Yen)",
+      "KR": "KRW (South Korean Won)",
+      "KZ": "KZT (Kazakhstani Tenge)",
+      "MX": "MXN (Mexican Peso)",
+      "MY": "MYR (Malaysian Ringgit)",
+      "NO": "NOK (Norwegian Krone)",
+      "NZ": "NZD (New Zealand Dollar)",
+      "PE": "PEN (Peruvian Sol)",
+      "PH": "PHP (Philippine Peso)",
+      "PL": "PLN (Polish Złoty)",
+      "QA": "QAR (Qatari Riyal)",
+      "RU": "RUB (Russian Ruble)",
+      "SA": "SAR (Saudi Riyal)",
+      "SG": "SGD (Singapore Dollar)",
+      "TH": "THB (Thai Baht)",
+      "TR": "TRY (Turkish Lira)",
+      "TW": "TWD (New Taiwan Dollar)",
+      "UA": "UAH (Ukrainian Hryvnia)",
+      "AE": "AED (UAE Dirham)",
+      "UY": "UYU (Uruguayan Peso)",
+      "VN": "VND (Vietnamese Đồng)",
+      "ZA": "ZAR (South African Rand)",
+    };
+    return currencyNames[code] ?? code;
+  }
 
   static const TextStyle optionStyle = TextStyle(
     fontSize: 30,
@@ -75,48 +167,22 @@ class _MyHomePageState extends State<MyHomePage> {
                 });
               },
               items:
-                  <String>[
-                    "US",
-                    "AR",
-                    "AU",
-                    "BR",
-                    "CA",
-                    "CL",
-                    "CN",
-                    "CO",
-                    "CR",
-                    "EU",
-                    "GB",
-                    "HK",
-                    "ID",
-                    "IL",
-                    "IN",
-                    "JP",
-                    "KR",
-                    "KZ",
-                    "MX",
-                    "MY",
-                    "NO",
-                    "NZ",
-                    "PE",
-                    "PH",
-                    "PL",
-                    "QA",
-                    "RU",
-                    "SA",
-                    "SG",
-                    "TH",
-                    "TR",
-                    "TW",
-                    "UA",
-                    "AE",
-                    "UY",
-                    "VN",
-                    "ZA",
-                  ].map<DropdownMenuItem<String>>((String value) {
+                  _countryCodeMap.keys.toList().map<DropdownMenuItem<String>>((
+                    String value,
+                  ) {
                     return DropdownMenuItem<String>(
                       value: value,
-                      child: Text(value),
+                      child: Tooltip(
+                        message: _getCurrencyName(value),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _getFlag(value),
+                            const SizedBox(width: 8),
+                            Text(value),
+                          ],
+                        ),
+                      ),
                     );
                   }).toList(),
             ),
